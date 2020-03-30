@@ -8,8 +8,8 @@
         <version>2.1.7.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.hinkmond</groupId>
-    <artifactId>spring-proj-template</artifactId>
+    <groupId>com.mphadke</groupId>
+    <artifactId>My-spring-proj-template</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <packaging>${artifact-packaging}</packaging>

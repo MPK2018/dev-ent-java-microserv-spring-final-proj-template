@@ -1,4 +1,4 @@
-package com.hinkmond.finalproj;
+package com.mphadke.finalproj;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

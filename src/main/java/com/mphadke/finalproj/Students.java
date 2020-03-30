@@ -1,11 +1,12 @@
-package com.hinkmond.finalproj;
+package com.mphadke.finalproj;
 
 
-public class AddUserData {
+public class Students {
     private String firstName;
     private String lastName;
-    private String address;
     private String email;
+    private String phoneNumber;
+
 
     public String getFirstName() {
         return firstName;
@@ -19,16 +20,12 @@ public class AddUserData {
     public void setLastName(String lastName) {
         this.lastName = lastName;
     }
-    public String getAddress() {
-        return address;
-    }
-    public void setAddress(String address) {
-        this.address = address;
-    }
     public String getEmail() {
         return email;
     }
     public void setEmail(String email) {
         this.email = email;
     }
+    public String getphoneNumber() { return phoneNumber;}
+    public void setphoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber;}
 }
