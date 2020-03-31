@@ -224,27 +224,6 @@ public class JDBCController {
             return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
 
     }
-   /* // Delete a Meeting not tested
-    @CrossOrigin
-    @RequestMapping(value = "/deleteMeeting", method = RequestMethod.POST)
-    public ResponseEntity<String> deleteMeeting(@RequestBody DeleteMeeting deleteMeeting) {
-
-        JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
-        int m = deleteMeeting.getMeetingId();
-        System.out.println("id is :"+ m +",     "+ deleteMeeting.getMeetingId());
-       try {
-           String queryStr = "DELETE FROM MeetingSchedule where scheduleId = "+ String.valueOf(deleteMeeting.getMeetingId()) +";";
-           System.out.println(queryStr);
-           int rowsUpdated=jdbcTemplate.update(queryStr);
-
-        }catch (DataAccessException e) {
-           return new ResponseEntity<String>("Cannot Delete Record does not exist"+ e, HttpStatus.NOT_FOUND);
-       }catch (Exception e){
-            return new ResponseEntity<String>("Cannot Delete "+ e, HttpStatus.NOT_FOUND);
-        }
-        return new ResponseEntity<String>("Meeting  cancelled: ", HttpStatus.OK );
-    }
-   */
 
 
 // General Methods
