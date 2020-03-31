@@ -88,13 +88,15 @@ public class JDBCController {
         int rowsUpdated = 0;
         try {
              rowsUpdated = jdbcTemplate.update(queryStr);
+
         }catch (DuplicateKeyException dae) {
             System.out.println("Record Already Exist");
             return new ResponseEntity<String>("You are already registered, Please enroll for the class", HttpStatus.CONFLICT);
         }catch (DataAccessException dae) {
             System.err.println("Error is :"+ dae);
         }
-        return new ResponseEntity<String>("Rows updated: " + rowsUpdated, HttpStatus.OK);
+
+        return new ResponseEntity<String>("Rows updated: " + getNewStudent(registerStudent.getLastName() ), HttpStatus.OK);
     }
 
     //Enroll in class
@@ -157,9 +159,10 @@ public class JDBCController {
            return new ResponseEntity<String>("Please enter Time in 24 hour Format HH:MM", HttpStatus.BAD_REQUEST);
        if(!dV.formatTime(scheduleMeetingData.getTime()))
            return new ResponseEntity<String>("Please enter Time in 24 hour Format HH:MM", HttpStatus.BAD_REQUEST);
-       int validDate = dV.formatDate(scheduleMeetingData.getDate());
+       String[] message={""};
+       int validDate = dV.formatDate(scheduleMeetingData.getDate(), message );
        if(validDate !=0)
-           return new ResponseEntity<String>("cannot schedule Meeting "+ errStr[validDate], HttpStatus.BAD_REQUEST);
+           return new ResponseEntity<String>(message[0], HttpStatus.BAD_REQUEST);
 
        //If you are here the date and time are valid
        String queryStr = "INSERT INTO MeetingSchedule(studentId,subjectId,meetingDate,meetingTime) " +
@@ -193,15 +196,44 @@ public class JDBCController {
 
     }
 
-    /*// Delete a Meeting not tested
+
+    //Get a meeting by StudentId
+    @CrossOrigin
+    @RequestMapping(value = "/getMeetingScheduleForStudent", method = RequestMethod.GET)
+    public ResponseEntity<String> getMeetingScheduleForStudent(@RequestParam(value="studentId", defaultValue="") int id) {
+        JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
+        StringBuilder resultStr = new StringBuilder();
+        System.out.println("lastName is "+ id);
+        //if (lastName.equals(""))
+          //  return new ResponseEntity<String>("Please Enter the Last Name", HttpStatus.BAD_REQUEST);
+
+        String queryStr = "SELECT * from MeetingSchedule where studentId = \"" +id +"\";";
+
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(queryStr);
+        while (sqlRowSet.next()) {
+            resultStr.append(sqlRowSet.getInt("scheduleId")).append(", ")
+                    .append(sqlRowSet.getInt("studentId")).append(", ")
+                    .append(sqlRowSet.getInt("subjectId")).append(", ")
+                    .append(sqlRowSet.getString("meetingDate")).append(", ")
+                    .append(sqlRowSet.getString("meetingTime")).append(", ")
+                    .append("\n");
+        }
+        if (resultStr.length()>0)
+            return new ResponseEntity<String>(String.valueOf(resultStr), HttpStatus.OK);
+        else
+            return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
+
+    }
+   /* // Delete a Meeting not tested
     @CrossOrigin
     @RequestMapping(value = "/deleteMeeting", method = RequestMethod.POST)
     public ResponseEntity<String> deleteMeeting(@RequestBody DeleteMeeting deleteMeeting) {
 
         JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
-        System.out.println("id is :"+ deleteMeeting.getMeetingId());
+        int m = deleteMeeting.getMeetingId();
+        System.out.println("id is :"+ m +",     "+ deleteMeeting.getMeetingId());
        try {
-           String queryStr = "DELETE FROM MeetingSchedule where scheduleId = "+ deleteMeeting.getMeetingId() +";";
+           String queryStr = "DELETE FROM MeetingSchedule where scheduleId = "+ String.valueOf(deleteMeeting.getMeetingId()) +";";
            System.out.println(queryStr);
            int rowsUpdated=jdbcTemplate.update(queryStr);
 
@@ -212,7 +244,7 @@ public class JDBCController {
         }
         return new ResponseEntity<String>("Meeting  cancelled: ", HttpStatus.OK );
     }
-*/
+   */
 
 
 // General Methods
@@ -224,6 +256,26 @@ public class JDBCController {
         return true;
     }
 
+    //get the new student details
+    public String getNewStudent(String lastName){
+        JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
+        StringBuilder resultStr = new StringBuilder();
+
+        String queryStr = "SELECT * from Students where lastName = \"" +lastName +"\";";
+
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(queryStr);
+        while (sqlRowSet.next()) {
+            resultStr.append(sqlRowSet.getString("studentId")).append(", ")
+                    .append(sqlRowSet.getString("firstName")).append(", ")
+                    .append(sqlRowSet.getString("lastName")).append(", ")
+                    .append(sqlRowSet.getString("phoneNumber")).append(", ")
+                    .append(sqlRowSet.getString("email")).append(", ")
+                    .append("\n");
+        }
+        if (resultStr.length()<=0)
+             return "Record Not Found";
+        return String.valueOf(resultStr);
+    }
     //get all subjecs from database
     public String getallSubject(){
         JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();

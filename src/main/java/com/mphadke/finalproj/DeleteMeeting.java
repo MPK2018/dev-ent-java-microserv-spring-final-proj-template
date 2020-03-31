@@ -1,13 +1,13 @@
 package com.mphadke.finalproj;
 
 public class DeleteMeeting {
-    int meetingId;
+    int scheduleId;
 
     public int getMeetingId() {
-        return meetingId;
+        return scheduleId;
     }
 
     public void setMeetingId(int meetingId) {
-        this.meetingId = meetingId;
+        this.scheduleId = meetingId;
     }
 }
