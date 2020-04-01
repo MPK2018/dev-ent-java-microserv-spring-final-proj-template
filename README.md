@@ -1,4 +1,4 @@
-# dev-ent-java-microserv-spring-final-proj-template
+#Tutoring Service 
 Spring Final Project Template
 #Tutiring Service Schedulling Spring Final Project Template
 
