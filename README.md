@@ -1,4 +1,5 @@
-# dev-ent-java-microserv-spring-final-proj-template
+## Tutoring Service
+
 Spring Final Project Template
 #Tutiring Service Schedulling Spring Final Project Template
 
@@ -26,14 +27,16 @@ Before you can proceed with scheduling you have to register as a student.
 
 ## scheduleMeeting
    You can schedule meeting for a class using this method. You will need to give your student id, subject id, date, and time. if you have not enrolled in the class, you will be directed to do so. The date should be a valid date in the form mm/dd/yyy for succesful scheduliing of a class. Similarly, the time is 24-hour (military) time in hh:mm format. Time should be a valid time in order to register for the class.
-  
+## getMeetingscheduleByStudentId
+You can print the meeting schedule for a student and it willshow all the scheduled meetings fir that student. You will need to give your student id. if the student is not regitered for this service you will get record not found message.
+   
 ## Improvements
    There are a couple enhancements that I wanted to do, but due to lack of time I was not able to implement them.
    If I had more time I would have implemented methods  such as
    - Delete registration
    - Change meeting schedule
    - Delete meeting. 
-   etcetera. 
+   ecetera. 
   ## Expectation
   I hope to complete this implementation add above mention functionality and some more and make it fully functioning service for my students.
   
