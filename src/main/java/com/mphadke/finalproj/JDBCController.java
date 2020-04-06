@@ -1,14 +1,13 @@
 package com.mphadke.finalproj;
 
-import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.Email;
 
 
 @RestController
@@ -20,20 +19,11 @@ public class JDBCController {
     @RequestMapping(value = "/printAllStudents", method = RequestMethod.GET)
     public ResponseEntity<String> printAllStudents() {
         JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
-        StringBuilder resultStr = new StringBuilder("List of all Students:\n");
 
         String queryStr = "SELECT * from Students;";
-        System.out.println(queryStr);
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(queryStr);
-        while (sqlRowSet.next()) {
-            resultStr.append(sqlRowSet.getString("studentId")).append(", ")
-                    .append(sqlRowSet.getString("firstName")).append(", ")
-                    .append(sqlRowSet.getString("lastName")).append(", ")
-                    .append(sqlRowSet.getString("email")).append(", ")
-                    .append(sqlRowSet.getString("phoneNumber"))
-                    .append("\n");
-        }
-        return new ResponseEntity<String> (String.valueOf(resultStr), HttpStatus.OK);
+
+        return new ResponseEntity<String> ("List of all Students:\n"+printStudent(sqlRowSet), HttpStatus.OK);
     }
 
 
@@ -42,27 +32,22 @@ public class JDBCController {
     @RequestMapping(value = "/getStudentsByLastname", method = RequestMethod.GET)
     public ResponseEntity<String> getStudentsByLastname(@RequestParam(value="lastName", defaultValue="") String lastName) {
         JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
-        StringBuilder resultStr = new StringBuilder();
-        System.out.println("lastName is "+lastName);
+
+        String resultStr ="";
+
         if (lastName.equals(""))
             return new ResponseEntity<String>("Please Enter the Last Name", HttpStatus.BAD_REQUEST);
 
         String queryStr = "SELECT * from Students where lastName = \"" +lastName +"\";";
 
-        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(queryStr);
-        while (sqlRowSet.next()) {
-            resultStr.append(sqlRowSet.getString("studentId")).append(", ")
-                    .append(sqlRowSet.getString("firstName")).append(", ")
-                    .append(sqlRowSet.getString("lastName")).append(", ")
-                    .append(sqlRowSet.getString("phoneNumber")).append(", ")
-                    .append(sqlRowSet.getString("email")).append(", ")
-                    .append("\n");
-        }
-        if (resultStr.length()>0)
-            return new ResponseEntity<String>(String.valueOf(resultStr), HttpStatus.OK);
-        else
+        try {
+            SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(queryStr);
+            resultStr = printStudent(sqlRowSet);
+        } catch (Exception e){
             return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
+        }
 
+        return new ResponseEntity<String>(resultStr, HttpStatus.OK);
     }
 
     //Add new Student  $$$
@@ -70,13 +55,7 @@ public class JDBCController {
     @RequestMapping(value = "/registerStudent", method = RequestMethod.POST)
     public ResponseEntity<String> registerStudent(@RequestBody Students registerStudent) {
         JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
-        System.out.println("I am here");
-    /*    if (!checkForNull(registerStudent.getEmail())){
-            return new ResponseEntity<String>("Email cannot be empty, Please enter it again", HttpStatus.BAD_REQUEST);
-        }
-        if (!checkForNull(registerStudent.getphoneNumber())){
-            return new ResponseEntity<String>("Phone number cannot be empty, Please enter it again", HttpStatus.BAD_REQUEST);
-        }*/
+
         String queryStr = "INSERT INTO Students(firstName, lastName, email, phoneNumber) " +
                 "VALUES (" +
                 "'" + registerStudent.getFirstName() + "'," +
@@ -84,20 +63,73 @@ public class JDBCController {
                 "'" + registerStudent.getEmail() + "'" +"," +
                 "'" + registerStudent.getphoneNumber() + "'" +
                 ");";
-        System.out.println(queryStr);
+
         int rowsUpdated = 0;
         try {
              rowsUpdated = jdbcTemplate.update(queryStr);
 
         }catch (DuplicateKeyException dae) {
-            System.out.println("Record Already Exist");
             return new ResponseEntity<String>("You are already registered, Please enroll for the class", HttpStatus.CONFLICT);
         }catch (DataAccessException dae) {
-            System.err.println("Error is :"+ dae);
+            return new ResponseEntity<String>("Error "+dae, HttpStatus.BAD_REQUEST);
         }
 
-        return new ResponseEntity<String>("Rows updated: " + getNewStudent(registerStudent.getLastName() ), HttpStatus.OK);
+        return new ResponseEntity<String>("Rows Inserted: \n" + getNewStudent(registerStudent.getLastName() ), HttpStatus.OK);
     }
+
+    //Delete Student  $$$
+    @CrossOrigin
+    @RequestMapping(value = "/deleteStudent", method = RequestMethod.POST)
+    public ResponseEntity<String> deleteStudent(@RequestBody DeleteStudent deleteStudent) {
+        JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
+
+        String data = getStudentById(deleteStudent.getStudentId());
+
+        String queryStr = "Delete from Students where studentId = "+deleteStudent.getStudentId()+";";
+
+        int rowsUpdated = 0;
+        try {
+            rowsUpdated = jdbcTemplate.update(queryStr);
+            if(rowsUpdated==0)
+                throw new NoSuchMethodException("No record found");
+        }catch (NoSuchMethodException e) {
+            return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
+        }catch (DataAccessException dae) {
+            return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
+        }catch (Exception  dae) {
+            return new ResponseEntity<String>("Can not delete Student \n" + dae, HttpStatus.BAD_REQUEST);
+        }
+
+        return new ResponseEntity<String>("Rows updated: Deleted student \n"+ data, HttpStatus.OK);
+    }
+
+    //Update Student  details $$$
+    @CrossOrigin
+    @RequestMapping(value = "/updateStudent", method = RequestMethod.POST)
+    public ResponseEntity<String> updateStudent(@RequestBody UpdateStudent updateStudent) {
+        JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
+        String queryStr1 = createQueryString(updateStudent);
+        if (queryStr1.length() <=0)
+            return new ResponseEntity<String>("Nothing to update ", HttpStatus.OK);
+        String queryStr = "update Students set " +  queryStr1 +
+                " where studentId = "+updateStudent.getStudentId()+";";
+
+        int rowsUpdated = 0;
+        try {
+            rowsUpdated = jdbcTemplate.update(queryStr);
+            if(rowsUpdated==0)
+                throw new NoSuchMethodException("No record found");
+        }catch (NoSuchMethodException e) {
+            return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
+        }catch (DataAccessException dae) {
+            return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
+        }catch (Exception  dae) {
+            return new ResponseEntity<String>("You did not update Student details" + dae, HttpStatus.BAD_REQUEST);
+        }
+
+        return new ResponseEntity<String>("Rows updated: updated student details \n" + getStudentById(updateStudent.getStudentId()), HttpStatus.OK);
+    }
+
 
     //Enroll in class
     @CrossOrigin
@@ -113,31 +145,25 @@ public class JDBCController {
                 "'" + subject_id + "'" +
                 ");";
         int rowsUpdated = 0;
-        System.out.println(queryStr);
+
         try {
-
              rowsUpdated = jdbcTemplate.update(queryStr);
-
         } catch (DuplicateKeyException dae) {
-            System.out.println("Record Already Exist");
-            return new ResponseEntity<String>("You have enrolled for this class", HttpStatus.CONFLICT);
+             return new ResponseEntity<String>("You have enrolled for this class", HttpStatus.CONFLICT);
         }catch (DataIntegrityViolationException dae){
-            System.out.println("I am here "+ dae.getMessage());
-            //Subject does not exist
-            if( dae.getLocalizedMessage().contains("F-Key2")) {
+
+            if( dae.getLocalizedMessage().contains("F-Key2")) { //Subject does not exist
                 String subjectError = "Subject is not offered  \n" + getallSubject();
-                System.out.println(subjectError);
                 return new ResponseEntity<String>(subjectError, HttpStatus.FAILED_DEPENDENCY);
             }
-            //Student does not exist
-            if( dae.getLocalizedMessage().contains("F-Key1")) {
+            if( dae.getLocalizedMessage().contains("F-Key1")) {  //Student does not exist
                 String subjectError ="Student is not registered Please Register";
                 return new ResponseEntity<String>(subjectError, HttpStatus.FAILED_DEPENDENCY);
             }
         }catch (DataAccessException dae) {
-            System.err.println("Error is :"+ dae);
+            return new ResponseEntity<String>("Error :"+dae, HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<String>("Rows updated: " + rowsUpdated, HttpStatus.OK);
+        return new ResponseEntity<String>("You are succesfully enrolled in the class ", HttpStatus.OK);
     }
 
 
@@ -173,20 +199,18 @@ public class JDBCController {
                "'" + scheduleMeetingData.getTime() + "'" +
                ");";
 
-       System.out.println(queryStr);
        try {
            int rowsUpdated = jdbcTemplate.update(queryStr);
        } catch (DuplicateKeyException dae) {
-               System.out.println("Record Already Exist");
                return new ResponseEntity<String>("You have scheduled this Meeting choose different time", HttpStatus.CONFLICT);
        } catch (DataIntegrityViolationException dae){
-           System.out.println("I am here "+ dae.getMessage());
+
            //Class  does not exist
               String classtError ="Class dose not exist";
                return new ResponseEntity<String>("You have not enrolled forthis class", HttpStatus.FAILED_DEPENDENCY);
 
        }catch (DataAccessException dae) {
-           System.err.println("Error is :"+ dae);
+
            return new ResponseEntity<String>(dae.getMessage(), HttpStatus.FAILED_DEPENDENCY);
        }
 
@@ -202,59 +226,79 @@ public class JDBCController {
     @RequestMapping(value = "/getMeetingScheduleForStudent", method = RequestMethod.GET)
     public ResponseEntity<String> getMeetingScheduleForStudent(@RequestParam(value="studentId", defaultValue="") int id) {
         JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
-        StringBuilder resultStr = new StringBuilder();
-        System.out.println("lastName is "+ id);
-        //if (lastName.equals(""))
-          //  return new ResponseEntity<String>("Please Enter the Last Name", HttpStatus.BAD_REQUEST);
 
+        String resultStr = "";
         String queryStr = "SELECT * from MeetingSchedule where studentId = \"" +id +"\";";
 
-        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(queryStr);
-        while (sqlRowSet.next()) {
-            resultStr.append(sqlRowSet.getInt("scheduleId")).append(", ")
-                    .append(sqlRowSet.getInt("studentId")).append(", ")
-                    .append(sqlRowSet.getInt("subjectId")).append(", ")
-                    .append(sqlRowSet.getString("meetingDate")).append(", ")
-                    .append(sqlRowSet.getString("meetingTime")).append(", ")
-                    .append("\n");
-        }
-        if (resultStr.length()>0)
-            return new ResponseEntity<String>(String.valueOf(resultStr), HttpStatus.OK);
-        else
+        try {
+            SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(queryStr);
+            if (!sqlRowSet.isBeforeFirst() ) {
+                throw new EmptyResultDataAccessException(0);
+            }
+            resultStr = printMeeting(sqlRowSet);
+        }catch (EmptyResultDataAccessException e) {
             return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
+        }catch (Exception e){
+            return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
+        }
+
+        return new ResponseEntity<String>(String.valueOf(resultStr), HttpStatus.OK);
 
     }
 
+    @RequestMapping(value = "/deleteMeeing", method = RequestMethod.POST)
+    public ResponseEntity<String> deleteMeeting(@RequestBody DeleteMeeting deleteMeeting) {
+        JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
+        StringBuilder resultStr = new StringBuilder("Scheduleid StudentId SubjectId Date       Time \n");
+       int id = deleteMeeting.getscheduleId();
+        ResponseEntity<String> result = getMeetingScheduleForStudent(id);
+        String queryStr = "DELETE from MeetingSchedule where scheduleId = \"" +id +"\";";
 
-// General Methods
+        int rowsUpdated=0;
+        try {
+            rowsUpdated = jdbcTemplate.update(queryStr);
+            if(rowsUpdated==0)
+                throw new NoSuchMethodException("No rcord found");
+        }catch (NoSuchMethodException e) {
+            return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
+        } catch (Exception e){
+            return new ResponseEntity<String>("Record Not Found", HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<String>("Meeting deleted Successfully", HttpStatus.OK);
 
-    public boolean checkForNull(String str){
-        if(str.isEmpty())
-        //if (str.length()==0))
-            return false;
-        return true;
     }
 
     //get the new student details
     public String getNewStudent(String lastName){
         JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
-        StringBuilder resultStr = new StringBuilder();
 
         String queryStr = "SELECT * from Students where lastName = \"" +lastName +"\";";
 
         SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(queryStr);
-        while (sqlRowSet.next()) {
-            resultStr.append(sqlRowSet.getString("studentId")).append(", ")
-                    .append(sqlRowSet.getString("firstName")).append(", ")
-                    .append(sqlRowSet.getString("lastName")).append(", ")
-                    .append(sqlRowSet.getString("phoneNumber")).append(", ")
-                    .append(sqlRowSet.getString("email")).append(", ")
-                    .append("\n");
-        }
+
+        String resultStr = printStudent(sqlRowSet);
         if (resultStr.length()<=0)
              return "Record Not Found";
-        return String.valueOf(resultStr);
+        return resultStr;
     }
+
+    //get the student details by id
+    public String getStudentById(int id){
+        JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
+        StringBuilder resultStr =
+                new StringBuilder("StudentId , Name                                              , Email                     , Phone Number");
+
+         String queryStr = "SELECT * from Students where studentId = \"" + id +"\";";
+
+        SqlRowSet sqlRowSet = jdbcTemplate.queryForRowSet(queryStr);
+
+
+        if (resultStr.length()<=0)
+            return "Record Not Found";
+        return String.valueOf(printStudent(sqlRowSet));
+    }
+
+
     //get all subjecs from database
     public String getallSubject(){
         JdbcTemplate jdbcTemplate = JDBCConnector.getJdbcTemplate();
@@ -269,4 +313,47 @@ public class JDBCController {
         }
         return String.valueOf(resultStr);
     }
+
+   public String createQueryString(UpdateStudent updStd){
+        String queryStr = "";
+        if(!updStd.getEmail().isEmpty() || updStd.getEmail().length()>0) {
+        queryStr += " email = \"" + updStd.getEmail() +"\"";
+        }
+        if (queryStr.length()>0)
+               queryStr+=", ";
+       if(!updStd.getPhoneNumber().isEmpty() || updStd.getPhoneNumber().length()>0) {
+           queryStr += "phoneNumber = \""+updStd.getPhoneNumber()+"\"";
+       }
+
+        return queryStr;
+   }
+
+   public String printStudent(SqlRowSet sqlRowSet){
+       StringBuilder resultStr =
+               new StringBuilder("StudentId   Name                                                Email                       Phone Number\n");
+       while (sqlRowSet.next()) {
+              resultStr.append(String.format("%-10s", sqlRowSet.getString("studentId"))).append("  ")
+                   .append(String.format("%-50s", ((sqlRowSet.getString("firstName") + " " + sqlRowSet.getString("lastName"))))).append("  ")
+                   .append(String.format("%-25s", sqlRowSet.getString("email"))).append(" ").append("  ")
+                   .append(String.format("%10s", sqlRowSet.getString("phoneNumber")))
+                   .append("\n");
+       }
+
+       return String.valueOf(resultStr);
+   }
+    public String printMeeting(SqlRowSet sqlRowSet){
+        StringBuilder resultStr =
+                new StringBuilder("Meeting id   Student Id     Subject Id   Date      Time\n");
+        while (sqlRowSet.next()) {
+            resultStr.append(String.format("%-11s", sqlRowSet.getString("scheduleId"))).append("  ")
+                     .append(String.format("%-11s", sqlRowSet.getString("studentId"))).append("  ")
+                    .append(String.format("%-11s", sqlRowSet.getString("subjectId"))).append( "  ")
+                    .append(String.format("%10s", sqlRowSet.getString("meetingDate"))).append("  ")
+                    .append(String.format("%5s", sqlRowSet.getString("meetingTime")))
+                    .append("\n");
+        }
+
+        return String.valueOf(resultStr);
+    }
+
 }

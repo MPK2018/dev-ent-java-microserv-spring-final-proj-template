@@ -61,3 +61,28 @@ public class ScheduleMeeting {
                 '}';
     }
 }
+
+class DeleteMeeting {
+    int scheduleId;
+
+    public int getscheduleId() {
+        return scheduleId;
+    }
+
+    public void setScheduleId(int meetingId) {
+        this.scheduleId = meetingId;
+    }
+}
+class UpdateMeeting {
+    int scheduleId;
+    String date;
+    String time;
+
+    public int getScheduleId() {
+        return scheduleId;
+    }
+
+    public void setScheduleId(int scheduleId) {
+        this.scheduleId = scheduleId;
+    }
+}
