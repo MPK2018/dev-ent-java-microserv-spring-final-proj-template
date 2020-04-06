@@ -1,7 +1,6 @@
 ## Tutoring Service
 
-Spring Final Project Template
-#Tutiring Service Scheduling Spring Final Project Template
+ ##Tutiring Service Scheduling Spring Final Project Template
 
 This API facilitates the process for students to enroll in a class and schedule meetings for the class. They can enroll in as many classes as they want and manage the meeting schedule.
 This API also facilitates the instructors to manage the Student information including registration.
