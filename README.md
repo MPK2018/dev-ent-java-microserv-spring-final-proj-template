@@ -1,6 +1,6 @@
 ## Tutoring Service
 
- ##Tutiring Service Scheduling Spring Final Project Template
+ ## Tutoring Service Scheduling Spring Final Project Template
 
 This API facilitates the process for students to enroll in a class and schedule meetings for the class. They can enroll in as many classes as they want and manage the meeting schedule.
 This API also facilitates the instructors to manage the Student information including registration.
@@ -14,6 +14,7 @@ http://ec2-52-42-165-6.us-west-2.compute.amazonaws.com:8080/My-spring-proj-templ
 ## How to proceed
 
 Before you can proceed with scheduling instructor have to register a student.
+
 ## printAllStudents
   This is more useful for the instructor /administration than the students. This does not need any user input. It prints all the students as the name suggests.
  
@@ -41,6 +42,7 @@ The student/Instructor can print the meeting schedule for a student and it will 
    I will have an available meeting schedule for a class and have students choose from that data.
    I did not add am/pm because I wanted to add the above-mentioned option which would have made this option redundant.
    etcetera.
+   
   ## Expectation
   I hope to complete this implementation add above mention functionality and some more and make it a fully functioning service for my students.
   
